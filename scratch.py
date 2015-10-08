@@ -41,10 +41,13 @@ def open_url_by_se(driver):
     # Basic Firearms Training
     bftPageCtrlId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_BasicFirearmPagerPanel"
     bftNtPageId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg2NextPage"    
+    bftTableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg2"
+    bftDataTag = "ET"
     # Places to Shoot
     ptsPageCtrlId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_NationalRegistryShootPagerPanel"
     ptsNtPageId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1NextPage"
     ptsTableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1"
+    ptsDataTag = "RANGE"
     try:
         for i in chooseList:
             driver.find_element_by_id(checkboxId+i).click()
@@ -58,10 +61,10 @@ def open_url_by_se(driver):
     button = driver.find_element_by_id(srchBtId)
     button.click()
     # handle bft
-    #bftRslt = get_all_bft(driver, bftPageCtrlId, bftNtPageId)
-    #write_to_excel(bftRslt, 'excelTest111_PA_filted.xlsx', 'Basic Firearms Training')
+    bftRslt = crawl_one_category(driver, bftPageCtrlId, bftNtPageId, bftTableId, bftDataTag, 2)
+    #rite_to_excel(bftRslt, 'excelTest111_PA_filted.xlsx', 'Basic Firearms Training')
     # handle pts
-    ptsRslt = crawl_one_category(driver, ptsPageCtrlId, ptsNtPageId, ptsTableId, 0)
+    ptsRslt = crawl_one_category(driver, ptsPageCtrlId, ptsNtPageId, ptsTableId, ptsDataTag, 0)
     #write_to_excel(ptsRslt, 'ptsexcelTest.xlsx', 'Place to Shoot')    
     return
 
@@ -91,47 +94,54 @@ def write_to_excel(content,saveFileName,category):
     return
 
 
-# find Basic Firearms Training
-def find_bft(soup):
-    global bft_number
-    bftTitleId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg2_lblClassType_"
-    resultList = []
-    for i in range(15):
-        bft = soup.find(id='ET'+str(bft_number))
-        if bft != None:    
-            adrsList = info_catch_bft(bft.get_text())
-            if adrsList != None:
-                bftTitle = soup.find(id = bftTitleId+str(i)).get_text()
-                adrsList[0] = bftTitle
-                resultList.append(adrsList)
-        bft_number += 1  
-    return resultList 
+## find Basic Firearms Training
+#def find_bft(soup):
+    #global bft_number
+    #bftTitleId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg2_lblClassType_"
+    #resultList = []
+    #for i in range(15):
+        #bft = soup.find(id='ET'+str(bft_number))
+        #if bft != None:    
+            #adrsList = info_catch_bft(bft.get_text())
+            #if adrsList != None:
+                #bftTitle = soup.find(id = bftTitleId+str(i)).get_text()
+                #adrsList[0] = bftTitle
+                #resultList.append(adrsList)
+        #bft_number += 1  
+    #return resultList 
 
 
-# find Place to Shoot
-def find_pst(soup):
-    global pts_number
-    tableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1"
-    table = soup.find(id = tableId)
-    allItem = table.find_all(class_= "tableItem")
-    resultList = []
-    for el in allItem:
-        item = []
-        courseNameList = el.find(class_="findCourse").get_text().split()
-        courseName = " ".join(courseNameList)
-        #print(courseName)
-        pts = el.find(id = "RANGE" + str(pts_number))
-        if pts != None:
-            adrsList = info_catch_pts(pts.get_text())
-            if adrsList != None:
-                adrsList [0] = courseName
-                resultList.append(adrsList)
-        pts_number += 1
-    return resultList
+## find Place to Shoot
+#def find_pst(soup):
+    #global pts_number
+    #tableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1"
+    #table = soup.find(id = tableId)
+    #allItem = table.find_all(class_= "tableItem")
+    #resultList = []
+    #for el in allItem:
+        #item = []
+        #courseNameList = el.find(class_="findCourse").get_text().split()
+        #courseName = " ".join(courseNameList)
+        ##print(courseName)
+        #pts = el.find(id = "RANGE" + str(pts_number))
+        #if pts != None:
+            #adrsList = info_catch_pts(pts.get_text())
+            #if adrsList != None:
+                #adrsList [0] = courseName
+                #resultList.append(adrsList)
+        #pts_number += 1
+    #return resultList
 
 def search_page(soup, tableId, dataTag, omitNumber):
     global pts_number
     global bft_number
+    
+    if dataTag == "ET":
+        choose = bft_number
+    elif dataTag == "RANGE":
+        choose = pts_number
+    
+    #cases = {"ET":bft_number,"RANGE":pts_number}
     table = soup.find(id = tableId)
     allItem = table.find_all(class_= "tableItem")
     resultList = []
@@ -140,15 +150,17 @@ def search_page(soup, tableId, dataTag, omitNumber):
         courseNameList = el.find(class_="findCourse").get_text().split()
         courseName = " ".join(courseNameList)
         #print(courseName)
-        pts = el.find(id = "RANGE" + str(pts_number))
-        if pts != None:
-            adrsList = info_catch_pts(pts.get_text())
+        info = el.find(id = dataTag + str(choose))
+        if info != None:
+            adrsList = info_catch(info.get_text(), omitNumber)
             if adrsList != None:
                 adrsList [0] = courseName
                 resultList.append(adrsList)
-                
-        pts_number += 1
-        
+        choose += 1
+    if dataTag == "ET":
+        bft_number = choose
+    elif dataTag == "RANGE":
+        pts_number = choose   
     return resultList
 
 
@@ -175,7 +187,99 @@ def geocoding(onePgAdrsList): #[(name, address, province, zip，(100,100)),(),()
     return geoAdrsList
 
 
-def get_all_bft(driver, pageCtrlId, ntPageId):
+#def get_all_bft(driver, pageCtrlId, ntPageId):
+    #currentPage = -2
+    #totalPage = -1
+    #rsltList = []
+    #geoChcekList = []
+    #while currentPage < totalPage:
+        #content = driver.page_source
+        #soup = bs4.BeautifulSoup(content) 
+        #pageCtrl = soup.find(id=pageCtrlId)
+        #if pageCtrl == None:
+            #time.sleep(10)
+            #print("try to reload "+str(currentPage+1))
+            #continue
+        #try:
+            #pageContent = pageCtrl.get_text()
+        #except Exception as err:
+            #print("problem on page "+str(currentPage+1))
+            #continue
+        #pageList = pageContent.split()
+        #currentPage = int(pageList[1].replace('of', ''))
+        #totalPage = int(pageList[2])
+        #onePgAdrsList = find_bft(soup)
+        #geoedList = geocoding(onePgAdrsList)        
+        #if DUPFILTER == 1:
+            #for finalItem in geoedList:
+                #if (finalItem[4] in geoChcekList) and finalItem[4] != ():
+                    #continue
+                #else:
+                    #geoChcekList.append(finalItem[4])
+                    #rsltList.append(finalItem)
+        #else:
+            #for finalItem in geoedList:
+                #rsltList.append(finalItem)  
+        #if currentPage == totalPage:
+            #break 
+        #try:
+            #npBt = driver.find_element_by_id(ntPageId)
+        #except Exception as e:
+            #print (e)
+            #print ('stuck in page: '+str(currentPage))
+            #time.sleep(5)    
+        #npBt = driver.find_element_by_id(ntPageId)  
+        #npBt.click()
+    #return rsltList
+
+
+#def get_all_pts(driver, pageCtrlId, ntPageId):
+    #currentPage = -2
+    #totalPage = -1
+    #rsltList = []
+    #geoChcekList = []
+    #while currentPage < totalPage:
+        #content = driver.page_source
+        #soup = bs4.BeautifulSoup(content) 
+        #pageCtrl = soup.find(id=pageCtrlId)
+        #if pageCtrl == None:
+            #time.sleep(10)
+            #print("try to reload "+str(currentPage+1))
+            #continue
+        #try:
+            #pageContent = pageCtrl.get_text()
+        #except Exception as err:
+            #print("problem on page "+str(currentPage+1))
+            #continue
+        #pageList = pageContent.split()
+        #currentPage = int(pageList[1].replace('of', ''))
+        #totalPage = int(pageList[2])
+        #onePgAdrsList = find_pst(soup)
+        #geoedList = geocoding(onePgAdrsList)        
+        #if DUPFILTER == 1:
+            #for finalItem in geoedList:
+                #if (finalItem[4] in geoChcekList) and finalItem[4] != ():
+                    #continue
+                #else:
+                    #geoChcekList.append(finalItem[4])
+                    #rsltList.append(finalItem)
+        #else:
+            #for finalItem in geoedList:
+                #rsltList.append(finalItem)  
+        #if currentPage == totalPage:
+            #break 
+        #try:
+            #npBt = driver.find_element_by_id(ntPageId)
+        #except Exception as e:
+            #print (e)
+            #print ('stuck in page: '+str(currentPage))
+            #time.sleep(5)    
+        #npBt = driver.find_element_by_id(ntPageId)  
+        #npBt.click()
+    #return rsltList
+
+
+def crawl_one_category(driver, pageCtrlId, ntPageId, tableId, dataTag, omitNumber):
     currentPage = -2
     totalPage = -1
     rsltList = []
@@ -196,100 +300,8 @@ def get_all_bft(driver, pageCtrlId, ntPageId):
         pageList = pageContent.split()
         currentPage = int(pageList[1].replace('of', ''))
         totalPage = int(pageList[2])
-        onePgAdrsList = find_bft(soup)
-        geoedList = geocoding(onePgAdrsList)        
-        if DUPFILTER == 1:
-            for finalItem in geoedList:
-                if (finalItem[4] in geoChcekList) and finalItem[4] != ():
-                    continue
-                else:
-                    geoChcekList.append(finalItem[4])
-                    rsltList.append(finalItem)
-        else:
-            for finalItem in geoedList:
-                rsltList.append(finalItem)  
-        if currentPage == totalPage:
-            break 
-        try:
-            npBt = driver.find_element_by_id(ntPageId)
-        except Exception as e:
-            print (e)
-            print ('stuck in page: '+str(currentPage))
-            time.sleep(5)    
-        npBt = driver.find_element_by_id(ntPageId)  
-        npBt.click()
-    return rsltList
-
-
-def get_all_pts(driver, pageCtrlId, ntPageId):
-    currentPage = -2
-    totalPage = -1
-    rsltList = []
-    geoChcekList = []
-    while currentPage < totalPage:
-        content = driver.page_source
-        soup = bs4.BeautifulSoup(content) 
-        pageCtrl = soup.find(id=pageCtrlId)
-        if pageCtrl == None:
-            time.sleep(10)
-            print("try to reload "+str(currentPage+1))
-            continue
-        try:
-            pageContent = pageCtrl.get_text()
-        except Exception as err:
-            print("problem on page "+str(currentPage+1))
-            continue
-        pageList = pageContent.split()
-        currentPage = int(pageList[1].replace('of', ''))
-        totalPage = int(pageList[2])
-        onePgAdrsList = find_pst(soup)
-        geoedList = geocoding(onePgAdrsList)        
-        if DUPFILTER == 1:
-            for finalItem in geoedList:
-                if (finalItem[4] in geoChcekList) and finalItem[4] != ():
-                    continue
-                else:
-                    geoChcekList.append(finalItem[4])
-                    rsltList.append(finalItem)
-        else:
-            for finalItem in geoedList:
-                rsltList.append(finalItem)  
-        if currentPage == totalPage:
-            break 
-        try:
-            npBt = driver.find_element_by_id(ntPageId)
-        except Exception as e:
-            print (e)
-            print ('stuck in page: '+str(currentPage))
-            time.sleep(5)    
-        npBt = driver.find_element_by_id(ntPageId)  
-        npBt.click()
-    return rsltList
-
-
-def crawl_one_category(driver, pageCtrlId, ntPageId, tableId, omitNumber):
-    currentPage = -2
-    totalPage = -1
-    rsltList = []
-    geoChcekList = []
-    while currentPage < totalPage:
-        content = driver.page_source
-        soup = bs4.BeautifulSoup(content) 
-        pageCtrl = soup.find(id=pageCtrlId)
-        if pageCtrl == None:
-            time.sleep(10)
-            print("try to reload "+str(currentPage+1))
-            continue
-        try:
-            pageContent = pageCtrl.get_text()
-        except Exception as err:
-            print("problem on page "+str(currentPage+1))
-            continue
-        pageList = pageContent.split()
-        currentPage = int(pageList[1].replace('of', ''))
-        totalPage = int(pageList[2])
-        onePgAdrsList = search_page(soup, tableId, omitNumber)
-        geoedList = geocoding(onePgAdrsList)        
+        onePgList = search_page(soup, tableId, dataTag, omitNumber)
+        geoedList = geocoding(onePgList)        
         if DUPFILTER == 1:
             for finalItem in geoedList:
                 if (finalItem[4] in geoChcekList) and finalItem[4] != ():
