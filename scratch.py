@@ -61,11 +61,11 @@ def open_url_by_se(driver):
     button = driver.find_element_by_id(srchBtId)
     button.click()
     # handle bft
-    bftRslt = crawl_one_category(driver, bftPageCtrlId, bftNtPageId, bftTableId, bftDataTag, 2)
-    #rite_to_excel(bftRslt, 'excelTest111_PA_filted.xlsx', 'Basic Firearms Training')
+    #bftRslt = crawl_one_category(driver, bftPageCtrlId, bftNtPageId, bftTableId, bftDataTag, 2)
+    #write_to_excel(bftRslt, 'excelTest222_all.xlsx', 'Basic Firearms Training')
     # handle pts
     ptsRslt = crawl_one_category(driver, ptsPageCtrlId, ptsNtPageId, ptsTableId, ptsDataTag, 0)
-    #write_to_excel(ptsRslt, 'ptsexcelTest.xlsx', 'Place to Shoot')    
+    write_to_excel(ptsRslt, 'excelTest222_all.xlsx', 'Place to Shoot')    
     return
 
 # list/set/tuple 
@@ -93,44 +93,6 @@ def write_to_excel(content,saveFileName,category):
         row += 1
     return
 
-
-## find Basic Firearms Training
-#def find_bft(soup):
-    #global bft_number
-    #bftTitleId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg2_lblClassType_"
-    #resultList = []
-    #for i in range(15):
-        #bft = soup.find(id='ET'+str(bft_number))
-        #if bft != None:    
-            #adrsList = info_catch_bft(bft.get_text())
-            #if adrsList != None:
-                #bftTitle = soup.find(id = bftTitleId+str(i)).get_text()
-                #adrsList[0] = bftTitle
-                #resultList.append(adrsList)
-        #bft_number += 1  
-    #return resultList 
-
-
-## find Place to Shoot
-#def find_pst(soup):
-    #global pts_number
-    #tableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1"
-    #table = soup.find(id = tableId)
-    #allItem = table.find_all(class_= "tableItem")
-    #resultList = []
-    #for el in allItem:
-        #item = []
-        #courseNameList = el.find(class_="findCourse").get_text().split()
-        #courseName = " ".join(courseNameList)
-        ##print(courseName)
-        #pts = el.find(id = "RANGE" + str(pts_number))
-        #if pts != None:
-            #adrsList = info_catch_pts(pts.get_text())
-            #if adrsList != None:
-                #adrsList [0] = courseName
-                #resultList.append(adrsList)
-        #pts_number += 1
-    #return resultList
 
 def search_page(soup, tableId, dataTag, omitNumber):
     global pts_number
@@ -179,104 +141,12 @@ def geocoding(onePgAdrsList): #[(name, address, province, zip，(100,100)),(),()
         try:
             place,gps = googlev3.geocode(adrsCnt)
         except Exception as err:
-            print ("cannot find Geolation for Address: "+adrsCnt+"\n"+"please find it manually, on row: "+str(rowCount))
+            print ("on row: "+str(rowCount)+". Cannot find Geolation for: "+adrsCnt)
         for item in el:
             newItem.append(item)
         newItem.append(gps)
         geoAdrsList.append(newItem)
     return geoAdrsList
-
-
-#def get_all_bft(driver, pageCtrlId, ntPageId):
-    #currentPage = -2
-    #totalPage = -1
-    #rsltList = []
-    #geoChcekList = []
-    #while currentPage < totalPage:
-        #content = driver.page_source
-        #soup = bs4.BeautifulSoup(content) 
-        #pageCtrl = soup.find(id=pageCtrlId)
-        #if pageCtrl == None:
-            #time.sleep(10)
-            #print("try to reload "+str(currentPage+1))
-            #continue
-        #try:
-            #pageContent = pageCtrl.get_text()
-        #except Exception as err:
-            #print("problem on page "+str(currentPage+1))
-            #continue
-        #pageList = pageContent.split()
-        #currentPage = int(pageList[1].replace('of', ''))
-        #totalPage = int(pageList[2])
-        #onePgAdrsList = find_bft(soup)
-        #geoedList = geocoding(onePgAdrsList)        
-        #if DUPFILTER == 1:
-            #for finalItem in geoedList:
-                #if (finalItem[4] in geoChcekList) and finalItem[4] != ():
-                    #continue
-                #else:
-                    #geoChcekList.append(finalItem[4])
-                    #rsltList.append(finalItem)
-        #else:
-            #for finalItem in geoedList:
-                #rsltList.append(finalItem)  
-        #if currentPage == totalPage:
-            #break 
-        #try:
-            #npBt = driver.find_element_by_id(ntPageId)
-        #except Exception as e:
-            #print (e)
-            #print ('stuck in page: '+str(currentPage))
-            #time.sleep(5)    
-        #npBt = driver.find_element_by_id(ntPageId)  
-        #npBt.click()
-    #return rsltList
-
-
-#def get_all_pts(driver, pageCtrlId, ntPageId):
-    #currentPage = -2
-    #totalPage = -1
-    #rsltList = []
-    #geoChcekList = []
-    #while currentPage < totalPage:
-        #content = driver.page_source
-        #soup = bs4.BeautifulSoup(content) 
-        #pageCtrl = soup.find(id=pageCtrlId)
-        #if pageCtrl == None:
-            #time.sleep(10)
-            #print("try to reload "+str(currentPage+1))
-            #continue
-        #try:
-            #pageContent = pageCtrl.get_text()
-        #except Exception as err:
-            #print("problem on page "+str(currentPage+1))
-            #continue
-        #pageList = pageContent.split()
-        #currentPage = int(pageList[1].replace('of', ''))
-        #totalPage = int(pageList[2])
-        #onePgAdrsList = find_pst(soup)
-        #geoedList = geocoding(onePgAdrsList)        
-        #if DUPFILTER == 1:
-            #for finalItem in geoedList:
-                #if (finalItem[4] in geoChcekList) and finalItem[4] != ():
-                    #continue
-                #else:
-                    #geoChcekList.append(finalItem[4])
-                    #rsltList.append(finalItem)
-        #else:
-            #for finalItem in geoedList:
-                #rsltList.append(finalItem)  
-        #if currentPage == totalPage:
-            #break 
-        #try:
-            #npBt = driver.find_element_by_id(ntPageId)
-        #except Exception as e:
-            #print (e)
-            #print ('stuck in page: '+str(currentPage))
-            #time.sleep(5)    
-        #npBt = driver.find_element_by_id(ntPageId)  
-        #npBt.click()
-    #return rsltList
 
 
 def crawl_one_category(driver, pageCtrlId, ntPageId, tableId, dataTag, omitNumber):
@@ -323,50 +193,6 @@ def crawl_one_category(driver, pageCtrlId, ntPageId, tableId, dataTag, omitNumbe
         npBt = driver.find_element_by_id(ntPageId)  
         npBt.click()
     return rsltList
-
-
-#def info_catch_pts(item):
-    #global PROVINCE
-    #itemList = item.split()
-    #etAdrs = ''
-    #etPost = []
-    #j = 0
-    #length = len(itemList)
-    #while j < length:
-        #if itemList[j] != ',':
-            #etAdrs += (' '+itemList[j])
-        #else:
-            #for k in range (1,3):
-                #etPost.append(itemList[j+k])
-            #break
-        #j += 1
-    #if PROVINCE == '' or PROVINCE == etPost[0]:
-        #return [None, etAdrs, etPost[0], etPost[1]]
-    #else:
-        #return None
-
-
-#def info_catch_bft(item):
-    #global PROVINCE
-    #itemList = item.split()
-    #for i in range(2):
-        #itemList.pop(0)
-    #etAdrs = ''
-    #etPost = []
-    #j = 0
-    #length = len(itemList)
-    #while j < length:
-        #if itemList[j] != ',':
-            #etAdrs += (' '+itemList[j])
-        #else:
-            #for k in range (1,3):
-                #etPost.append(itemList[j+k])
-            #break
-        #j += 1
-    #if PROVINCE == '' or PROVINCE == etPost[0]:
-        #return [None, etAdrs, etPost[0], etPost[1]]
-    #else:
-        #return None
     
     
 def info_catch(item, omitNumber):

@@ -12,16 +12,24 @@
 #print (gps)
 #for i in range(1,4):
     #print(i)
-def call_1(a):
-    print (str(a*2))
+#def call_1(a):
+    #print (str(a*2))
 
-def call_2(b):
-    print(str(-b))
+#def call_2(b):
+    #print(str(-b))
     
-def main_call(call_method,num):
-    call_method(num)
+#def main_call(call_method,num):
+    #call_method(num)
 
-main_call(call_2,3)
+#main_call(call_2,3)
 
-for i in range(0):
-    print("hi")
+#for i in range(0):
+    #print("hi")
+    
+a=1
+def test():
+    global a
+    a=a+2
+
+test()
+print(a)
