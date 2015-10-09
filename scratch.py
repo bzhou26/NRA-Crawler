@@ -25,6 +25,10 @@ bft_number = 1 # for bft
 pts_number = 1 # for pts
 row = 0
 rowCount = 0
+# http://www.zipcodestogo.com/Pennsylvania/
+f = open("pazip",'r')
+zipList = f.read().split()    
+f.close()
 
 # swithch key
 DUPFILTER = 0 # avoid duplicated information, change it to 1, or leave it 0 if you need original information
@@ -48,6 +52,7 @@ def open_url_by_se(driver):
     ptsNtPageId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1NextPage"
     ptsTableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg1"
     ptsDataTag = "RANGE"
+    # Clubs and Associations
     try:
         for i in chooseList:
             driver.find_element_by_id(checkboxId+i).click()
@@ -60,27 +65,26 @@ def open_url_by_se(driver):
     select.select_by_visible_text("200")
     button = driver.find_element_by_id(srchBtId)
     button.click()
+    workbook = xlsxwriter.Workbook("all_data_All.xlsx")
+    worksheet = workbook.add_worksheet('NRA Address') 
+    worksheet.set_column("A:A",40)
+    worksheet.set_column("B:C",60)
     # handle bft
-    #bftRslt = crawl_one_category(driver, bftPageCtrlId, bftNtPageId, bftTableId, bftDataTag, 2)
-    #write_to_excel(bftRslt, 'excelTest222_all.xlsx', 'Basic Firearms Training')
+    bftRslt = crawl_one_category(driver, bftPageCtrlId, bftNtPageId, bftTableId, bftDataTag, 2)
+    write_to_excel(bftRslt, worksheet, 'Basic Firearms Training')
     # handle pts
     ptsRslt = crawl_one_category(driver, ptsPageCtrlId, ptsNtPageId, ptsTableId, ptsDataTag, 0)
-    write_to_excel(ptsRslt, 'excelTest222_all.xlsx', 'Place to Shoot')    
+    write_to_excel(ptsRslt, worksheet, 'Place to Shoot')
+    # handle cad
+    cadRslt = crawl_cad()
+    write_to_excel(cadRslt, worksheet, 'Club and Associations Directory')
+    workbook.close()
     return
 
-# list/set/tuple 
-def write_to_file(content,saveFileName):
-    with open(saveFileName,'a') as f:
-        for el in content:
-            f.write(el)
-    #text = content #.encode("utf-8")
 
-
-def write_to_excel(content,saveFileName,category):
+def write_to_excel(content,worksheet,category):
     #content [(name, adrs, PA, Postcode, geo),...]
     global row
-    workbook = xlsxwriter.Workbook(saveFileName)
-    worksheet = workbook.add_worksheet('NRA Address')
     for unit in content:
         worksheet.write(row, 0, category)
         column = 1
@@ -97,11 +101,13 @@ def write_to_excel(content,saveFileName,category):
 def search_page(soup, tableId, dataTag, omitNumber):
     global pts_number
     global bft_number
-    
+    cad_number = 1
     if dataTag == "ET":
         choose = bft_number
     elif dataTag == "RANGE":
         choose = pts_number
+    elif dataTag == "CLUBDIRECTORY":
+        choose = cad_number
     
     #cases = {"ET":bft_number,"RANGE":pts_number}
     table = soup.find(id = tableId)
@@ -141,7 +147,7 @@ def geocoding(onePgAdrsList): #[(name, address, province, zip，(100,100)),(),()
         try:
             place,gps = googlev3.geocode(adrsCnt)
         except Exception as err:
-            print ("on row: "+str(rowCount)+". Cannot find Geolation for: "+adrsCnt)
+            print ("on row: "+str(rowCount)+". Cannot find Geolation for: "+adrsCnt+" ziplist[0] is: "+str(zipList[0]))
         for item in el:
             newItem.append(item)
         newItem.append(gps)
@@ -217,13 +223,76 @@ def info_catch(item, omitNumber):
     else:
         return None
         
+
+def crawl_cad():
+    global zipList
+    rsltList = []
+    resultSet = []
+    while zipList != []:
+        onePgSet = []
+        zipCode = zipList.pop(0)
+        driver = webdriver.Firefox()
+        driver.maximize_window()
+        driver.get('http://findnra.nra.org/')      
+        driver = do_cad_search(driver, zipCode)
+        content = driver.page_source
+        soup = bs4.BeautifulSoup(content)
+        tableId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_dg11"
+        dataTag = "CLUBDIRECTORY"
+        onePgList = search_page(soup, tableId, dataTag, 1)
+        for item in onePgList:
+            if item not in resultSet:        
+                onePgSet.append(item)
+                resultSet.append(item)
+        geoedList = geocoding(onePgSet)  
+        for el in geoedList:
+            rsltList.append(el)
+        driver.close()
+    return rsltList
+        
+    
+
+def do_cad_search(driver, zipCode):
+    failCount = 0
+    failSwitch = True
+    checkId = "ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_chkGrids_2"
+    while failSwitch:
+        try: 
+            driver.find_element_by_id(checkId).click()
+            failSwitch = False
+        except Exception as e:
+            failCount += 1
+            print("Fail to load main search Page. Failed: "+str(failCount)+" time(s)")
+            time.sleep(5)
+            if failCount == 10: 
+                raise
+            continue
+    elem = driver.find_element_by_id("ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_LocationTextBox")
+    # http://www.netstate.com/states/geography/pa_geography.htm
+    elem.send_keys(zipCode) # The geographic center of Pennsylvania
+    select = Select(driver.find_element_by_id("ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_ddlMiles"))
+    select.select_by_visible_text("25")
+    button = driver.find_element_by_id("ContentPlaceHolderDefault_DivMainCPH_ctl01_NRANearYouControl_2_imgbtn_Locate")
+    button.click()
+    return driver
+
+
+def show_time(time):
+    hours = time//3600
+    minutes = (time//60)%60
+    seconds = time%60
+    print ("program runs for "+str(int(hours))+" hours, "+str(int(minutes))+" minutes, "+str(seconds)+" seconds.")
+
     
 if __name__ == '__main__':
     saveFileName = "nra"
     crawlUrl = 'http://findnra.nra.org/'
+    startTime = time.time()
     driver = webdriver.Firefox()
     driver.maximize_window()
     driver.get(crawlUrl)
     open_url_by_se(driver)
     driver.close()
+    elapsedTime = time.time() - startTime
+    show_time(elapsedTime)   
     print('all finish! ')
