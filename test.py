@@ -25,10 +25,17 @@
 #show_time(1445121.74545841454)
 
 #a=9
-import time
-time.#b=5
-#c=a%b
-#print (c)
-a= "123"
-b= str(a)
-print(b)
+#import time
+#time.#b=5
+##c=a%b
+##print (c)
+#a= "123"
+#b= str(a)
+#print(b)
+
+
+import geopy
+
+googlev3 = geopy.GoogleV3()
+place,gps = googlev3.geocode("  Indian Falls Road Corfu	NY 14036")
+print (gps)
